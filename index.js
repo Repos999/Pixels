@@ -9,9 +9,19 @@ app.get('/convert', async (req, res) => {
         const imageUrl = req.query.url;
         if (!imageUrl) return res.status(400).json({ error: "URL ausente" });
 
-        const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-        const image = await jimp.read(response.data);
+        // Simula um navegador real para evitar bloqueio de sites
+        const response = await axios.get(imageUrl, {
+            responseType: 'arraybuffer',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+            }
+        });
 
+        // Converte os dados brutos para Buffer antes de passar para o Jimp
+        const imageBuffer = Buffer.from(response.data);
+        const image = await jimp.read(imageBuffer);
+
+        // Redimensiona a imagem para 16x16 pixels
         image.resize(16, 16);
 
         let pixelMatrix = [];
@@ -28,7 +38,7 @@ app.get('/convert', async (req, res) => {
 
         res.json(pixelMatrix);
     } catch (error) {
-        res.status(500).json({ error: "Falha ao processar a imagem" });
+        res.status(500).json({ error: "Falha ao processar a imagem", motivo: error.message });
     }
 });
 
