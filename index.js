@@ -7,6 +7,10 @@ const app = express();
 app.get('/convert', async (req, res) => {
     try {
         const imageUrl = req.query.url;
+        
+        // NOVO: Pega o tamanho da URL. Se não tiver, o padrão é 16 (protege seu script antigo)
+        const size = parseInt(req.query.size) || 16; 
+
         if (!imageUrl) return res.status(400).json({ error: "URL ausente" });
 
         const response = await axios.get(imageUrl, {
@@ -19,18 +23,18 @@ app.get('/convert', async (req, res) => {
         const imageBuffer = Buffer.from(response.data);
         let image = await jimp.read(imageBuffer);
 
-        // Cria uma camada de fundo branco para substituir a transparência por branco em vez de preto
+        // Cria uma camada de fundo branco
         let whiteBg = new jimp(image.getWidth(), image.getHeight(), 0xFFFFFFFF);
         whiteBg.composite(image, 0, 0);
 
-        // Redimensiona a imagem com o fundo corrigido para 16x16 pixels
-        whiteBg.resize(16, 16);
+        // Redimensiona usando a variável "size"
+        whiteBg.resize(size, size);
 
         let pixelMatrix = [];
 
-        for (let y = 0; y < 16; y++) {
+        for (let y = 0; y < size; y++) {
             let row = [];
-            for (let x = 0; x < 16; x++) {
+            for (let x = 0; x < size; x++) {
                 const colorHex = whiteBg.getPixelColor(x, y);
                 const { r, g, b } = jimp.intToRGBA(colorHex);
                 row.push({ r, g, b });
